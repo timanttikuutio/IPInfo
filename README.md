@@ -7,8 +7,8 @@ First git clone the repository to your computer and make sure you have GO instal
 You'll then have to install a few go libraries for building the project.
 
 Run the following commands in the newly downloaded project directory:
- - `go get github.com/joho/godotenv`
- - `go get github.com/TwiN/go-color`
+- `go get github.com/joho/godotenv`
+- `go get github.com/TwiN/go-color`
 
 After that's done, you can run `go build -o IPInfo main.go` or `GOOS=windows go build -o IPInfo.exe main.go`, if you're on Windows.
 
