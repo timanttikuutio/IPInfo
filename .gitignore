@@ -1,3 +1,4 @@
 /IPInfo*
 config.env
 .idea
+go.sum
