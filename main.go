@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/TwiN/go-color"
+	"github.com/joho/godotenv"
 	"io"
 	"net/http"
 	"os"
@@ -29,36 +30,75 @@ func main() {
 
 	prefix := color.Cyan + "[" + color.Green + "IP Info" + color.Cyan + "]" + color.Reset
 
+	err := godotenv.Load("config.env")
+	if err != nil {
+		path, err := os.Getwd()
+		fmt.Println(prefix, color.Yellow, "The config file does not exist. Generating one at:", path+"/config.env", color.Reset)
+
+		file, err := os.Create("config.env")
+		if err != nil {
+			fmt.Println(prefix, color.Reset, "An error occurred whilst creating the config file.", color.Reset)
+		}
+
+		_, err = file.WriteString("IPINFO_APIKEY=")
+		if err != nil {
+			return
+		}
+	}
+
 	if len(args) < 2 {
-		fmt.Println(prefix, color.Yellow, "No IP address provided.", color.Reset, "\n\nCommand syntax:", args[0], "<IP Address here>")
+		fmt.Println(prefix, color.Yellow, "No IP address provided.", color.Reset, "\n\nCommand syntax:", args[0],
+			"<IP Address here>")
 		return
 	}
 
 	req, err := http.NewRequest("GET", "https://ipinfo.io/"+args[1], nil)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Println(err.Error())
 		return
 	}
 
-	req.Header = http.Header{
-		"Accept":        {"application/json"},
-		"Authorization": {"Bearer 922cf6865cfa90"},
+	req.Header = http.Header{"Accept": {"application/json"}}
+
+	apikey, exists := os.LookupEnv("IPINFO_APIKEY")
+	if !exists || apikey == "" {
+		fmt.Println(prefix, color.Yellow, "The API-key seems to be unset, accessing ipinfo.io as a guest.\n",
+			strings.Repeat(" ", 9), "NOTE: heavy rate-limits will apply. Consider creating a free API-key at https://ipinfo.io")
+	} else {
+		req.Header.Add("Authorization", "Bearer "+apikey)
 	}
 
 	resBody, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Println(err.Error())
 		return
 	}
 
-	defer resBody.Body.Close()
+	if resBody.StatusCode == 403 {
+		fmt.Println(prefix, color.Red, "Your ipinfo.io API key seems to be invalid. Please check the key or omit "+
+			"it, to run the script as guest.\n", strings.Repeat(" ", 9), "NOTE: You may be rate-limited "+
+			"rather quickly without a valid API key.")
+		return
+	}
+	if resBody.StatusCode == 429 {
+		fmt.Println(
+			prefix, color.Yellow,
+			"It seems like you've exceeded the rate-limit. Please try again at later date.", color.Reset)
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resBody.Body)
 	body, err := io.ReadAll(resBody.Body)
 
 	var data IPInfoIO
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	var bogon string
