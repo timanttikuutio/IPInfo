@@ -30,12 +30,13 @@ func main() {
 
 	prefix := color.Cyan + "[" + color.Green + "IP Info" + color.Cyan + "]" + color.Reset
 
-	err := godotenv.Load("config.env")
-	if err != nil {
-		path, err := os.Getwd()
-		fmt.Println(prefix, color.Yellow, "The config file does not exist. Generating one at:", path+"/config.env", color.Reset)
+	configPath, _ := os.UserConfigDir()
 
-		file, err := os.Create("config.env")
+	err := godotenv.Load(configPath + "/ipinfoConfig.env")
+	if err != nil {
+		fmt.Println(prefix, color.Yellow, "The config file does not exist. Generating one at:", configPath+"/ipinfoConfig.env", color.Reset)
+
+		file, err := os.Create(configPath + "/ipinfoConfig.env")
 		if err != nil {
 			fmt.Println(prefix, color.Reset, "An error occurred whilst creating the config file.", color.Reset)
 		}
